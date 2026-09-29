@@ -1,0 +1,6 @@
+# Alignment + BAM sort/index (germline DNA)
+name: align
+channels: [conda-forge, bioconda]
+dependencies:
+  - bwa=0.7.18
+  - samtools=1.20

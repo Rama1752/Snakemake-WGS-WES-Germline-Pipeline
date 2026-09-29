@@ -1,0 +1,5 @@
+name: snakemake_env
+channels: [conda-forge, bioconda]
+dependencies:
+  - snakemake=9.27.0
+  - pandas

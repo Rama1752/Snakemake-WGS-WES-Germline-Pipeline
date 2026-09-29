@@ -1,0 +1,53 @@
+# =====================================================================
+#  Germline DNA pipeline : FASTQ -> filtered VCF
+#  FastQC -> fastp -> BWA-MEM -> markdup -> [BQSR]
+#         -> HaplotypeCaller -> GenotypeGVCFs -> split/filter -> merge
+#  QC branch: mosdepth (WES: on-target / WGS: genome-wide)
+# =====================================================================
+import time
+from datetime import timedelta
+
+configfile: "config/config.yaml"
+
+include: "rules/common.smk"
+include: "rules/qc.smk"
+include: "rules/trim.smk"
+include: "rules/align.smk"
+include: "rules/markdup.smk"
+include: "rules/bqsr.smk"
+include: "rules/coverage.smk"
+include: "rules/calling.smk"
+include: "rules/filter.smk"
+include: "rules/multiqc.smk"
+
+# ---- final targets ----
+def all_targets():
+    t  = expand("results/{s}/fastqc/{s}_R1_fastqc.html", s=SAMPLES)
+    t += expand("results/{s}/trimmed/fastqc/{s}_trimmed_R1_fastqc.html", s=SAMPLES)
+    t += expand("results/{s}/coverage/{s}.mosdepth.summary.txt", s=SAMPLES)
+    t += expand("results/{s}/variants/{s}.filtered.vcf.gz", s=SAMPLES)
+    t += expand("results/{s}/multiqc/{s}_multiqc_report.html", s=SAMPLES)
+    return t
+
+rule all:
+    input:
+        all_targets()
+
+# ---- wall-clock reporting ----
+_start = time.time()
+
+onstart:
+    print("="*60)
+    print(f"  Pipeline start   mode={MODE}  BQSR={'on' if RUN_BQSR else 'off'}")
+    print(f"  Samples: {len(SAMPLES)}  ->  {', '.join(SAMPLES)}")
+    print("="*60)
+
+onsuccess:
+    dur = timedelta(seconds=round(time.time() - _start))
+    print("="*60)
+    print(f"  COMPLETED — total wall-clock time: {dur}")
+    print("="*60)
+
+onerror:
+    dur = timedelta(seconds=round(time.time() - _start))
+    print(f"  FAILED after {dur}. Check logs/<sample>/ for details.")

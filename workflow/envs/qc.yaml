@@ -1,0 +1,8 @@
+# QC + coverage tools (FastQC, seqkit, mosdepth, samtools stats)
+name: qc
+channels: [conda-forge, bioconda]
+dependencies:
+  - fastqc=0.12.1
+  - seqkit=2.8.2
+  - mosdepth=0.3.8
+  - samtools=1.20

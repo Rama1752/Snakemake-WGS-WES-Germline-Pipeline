@@ -1,0 +1,27 @@
+# runtime outputs
+results/
+logs/
+benchmarks/
+tmp/
+.snakemake/
+
+# input data — never commit
+data/
+
+
+# large genomic files anywhere
+*.bam
+*.bai
+*.fastq.gz
+*.fq.gz
+*.vcf.gz
+*.vcf.gz.tbi
+*.fa
+*.fasta
+*.fai
+*.dict
+
+# OS / editor
+.DS_Store
+*.swp
+__pycache__/
