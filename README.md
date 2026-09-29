@@ -52,5 +52,3 @@ Always pass `--use-conda` (reproducibility) and `--rerun-triggers mtime`
     ├── variants/     <sample>.filtered.vcf.gz  (final)
     └── multiqc/      per-sample MultiQC report
 
-## License
-MIT
