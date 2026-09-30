@@ -1,5 +1,5 @@
 # Germline WGS/WES Variant Calling Pipeline
-
+ 
 ## Workflow
 ![Pipeline DAG](dag.svg)
  
@@ -35,19 +35,73 @@ builds those automatically the first time you run with `--use-conda`.
  
 ---
  
-## 2. Prepare inputs
+## 2. Reference data
  
-**a) Reference genome** (GRCh38) — must be pre-indexed:
+This pipeline needs a **GRCh38 reference** and **known-sites VCFs** for BQSR.
+The recommended source is the **GATK Resource Bundle** (Broad public bucket) —
+the reference and known-sites there all use `chr`-style naming (`chr1`, `chrM`)
+and are mutually compatible, so no renaming is needed.
  
+Bucket: `gs://gcp-public-data--broad-references/hg38/v0/`
+([docs](https://gatk.broadinstitute.org/hc/en-us/articles/360035890811-Resource-bundle)).
+The base URL is not browsable in a browser, but `wget` on a full file path works.
+ 
+**Reference genome:**
 ```bash
-bwa index genome.fa
-samtools faidx genome.fa
-gatk CreateSequenceDictionary -R genome.fa
+BASE=https://storage.googleapis.com/gcp-public-data--broad-references/hg38/v0
+wget $BASE/Homo_sapiens_assembly38.fasta \
+     $BASE/Homo_sapiens_assembly38.fasta.fai \
+     $BASE/Homo_sapiens_assembly38.dict
+bwa index Homo_sapiens_assembly38.fasta          # build the BWA index
 ```
  
-You also need the BQSR known-sites VCFs (dbSNP, Mills, known-indels).
+**Known-sites (for BQSR):**
+```bash
+BASE=https://storage.googleapis.com/gcp-public-data--broad-references/hg38/v0
+wget $BASE/Homo_sapiens_assembly38.dbsnp138.vcf \
+     $BASE/Homo_sapiens_assembly38.dbsnp138.vcf.idx \
+     $BASE/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
+     $BASE/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi \
+     $BASE/Homo_sapiens_assembly38.known_indels.vcf.gz \
+     $BASE/Homo_sapiens_assembly38.known_indels.vcf.gz.tbi
+```
  
-**b) Sample sheet** — edit `config/samples.tsv` (tab-separated). One row per sample;
+**Exome targets (WES only)** — get the BED from your capture-kit vendor, then:
+```bash
+gatk BedToIntervalList -I targets.bed \
+    -SD Homo_sapiens_assembly38.dict -O targets.interval_list
+```
+ 
+### ⚠️ Contig naming must match
+ 
+The **reference, known-sites, and target BED must all use the same contig
+naming**, or BQSR/calling will fail or silently produce nothing (e.g. GATK
+can't match `chr1` in known-sites against `1` in your BAM).
+ 
+| Source | Contig names |
+|--------|--------------|
+| UCSC / Broad bundle | `chr1`, `chr2`, `chrM` |
+| Ensembl | `1`, `2`, `MT` |
+| RefSeq | `NC_000001.11`, ... |
+ 
+Using the Broad bundle above, everything already matches — nothing to do.
+If you use a **different reference** (e.g. Ensembl), rename the known-sites to
+match it first. Example (`chr` → Ensembl):
+```bash
+# mapping file: old <tab> new  (chr1  1 ... chrM  MT)
+printf 'chr1\t1\nchr2\t2\nchrM\tMT\n' > chr_map.txt   # ... add all contigs
+ 
+bcftools annotate --rename-chrs chr_map.txt \
+    known_sites.vcf.gz -Oz -o known_sites.renamed.vcf.gz
+tabix -p vcf known_sites.renamed.vcf.gz
+```
+Check your reference's naming with: `cut -f1 genome.fa.fai | head`
+ 
+---
+ 
+## 3. Prepare inputs
+ 
+**a) Sample sheet** — edit `config/samples.tsv` (tab-separated). One row per sample;
 the sample name must match your FASTQ file naming:
  
 ```
@@ -56,7 +110,7 @@ patient1	/path/patient1_R1.fastq.gz	/path/patient1_R2.fastq.gz
 patient2	/path/patient2_R1.fastq.gz	/path/patient2_R2.fastq.gz
 ```
  
-**c) Config** — edit `config/config.yaml`:
+**b) Config** — edit `config/config.yaml`:
  
 | Setting | What to do |
 |---------|-----------|
@@ -68,7 +122,7 @@ patient2	/path/patient2_R1.fastq.gz	/path/patient2_R2.fastq.gz
  
 ---
  
-## 3. Run
+## 4. Run
  
 ```bash
 # dry run first — shows what will happen without running it
@@ -93,11 +147,11 @@ environments once; later runs reuse them.
 | `-p` | print the shell commands as they run |
  
 ---
-
+ 
 ## Output
-
+ 
 Results are organized per sample under `results/<sample>/`:
-
+ 
 ```text
 results/sample/
 ├── fastqc/                          # raw-read QC
@@ -123,11 +177,10 @@ results/sample/
 └── multiqc/
     └── sample_multiqc_report.html   # per-sample QC summary
 ```
-
+ 
 Alongside `results/`, the pipeline also writes:
 - `logs/<sample>/`      — per-rule logs
 - `benchmarks/<sample>/` — per-rule runtime & memory
-
 ---
  
 ## Switching WGS ↔ WES
@@ -164,3 +217,4 @@ Orchestration: Snakemake 9.27.0
 ## License
  
 MIT — see [LICENSE](LICENSE).
+ 
