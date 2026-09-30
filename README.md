@@ -1,7 +1,7 @@
 # Germline WGS/WES Variant Calling Pipeline
 
 ## Workflow
-<img src="dag.svg" alt="Pipeline DAG" width="400">
+![Pipeline DAG](dag.svg)
  
 A reproducible [Snakemake](https://snakemake.github.io/) pipeline that takes raw
 paired-end reads to a filtered VCF. Works for both whole-genome (**WGS**) and
