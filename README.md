@@ -93,21 +93,41 @@ environments once; later runs reuse them.
 | `-p` | print the shell commands as they run |
  
 ---
- 
-## 4. Output
- 
-Everything lands under `results/<sample>/`:
- 
+
+## Output
+
+Results are organized per sample under `results/<sample>/`:
+
+```text
+results/sample/
+├── fastqc/                          # raw-read QC
+│   ├── sample_R1_fastqc.html
+│   └── sample_R2_fastqc.html
+├── trimmed/                         # trimmed reads + post-trim QC
+│   ├── sample_trimmed_R1.fastq.gz
+│   ├── sample_trimmed_R2.fastq.gz
+│   ├── sample.html                  # fastp report
+│   └── fastqc/
+│       └── sample_trimmed_R1_fastqc.html
+├── align/                           # alignment, dedup, recalibration
+│   ├── sample.sorted.bam
+│   ├── sample.markdup.bam
+│   ├── sample.dup_metrics.txt
+│   └── sample.bqsr.bam              # analysis-ready BAM
+├── coverage/                        # mosdepth coverage
+│   └── sample.mosdepth.summary.txt
+├── variants/
+│   ├── sample.g.vcf.gz              # gVCF (HaplotypeCaller)
+│   ├── sample.vcf.gz                # genotyped
+│   └── sample.filtered.vcf.gz       # ← final filtered VCF
+└── multiqc/
+    └── sample_multiqc_report.html   # per-sample QC summary
 ```
-results/patient1/
-├── fastqc/       raw-read QC
-├── trimmed/      trimmed reads + QC
-├── align/        sorted, deduplicated, recalibrated BAM
-├── coverage/     mosdepth coverage summary
-├── variants/     patient1.filtered.vcf.gz   ← final result
-└── multiqc/      per-sample MultiQC report
-```
- 
+
+Alongside `results/`, the pipeline also writes:
+- `logs/<sample>/`      — per-rule logs
+- `benchmarks/<sample>/` — per-rule runtime & memory
+
 ---
  
 ## Switching WGS ↔ WES
