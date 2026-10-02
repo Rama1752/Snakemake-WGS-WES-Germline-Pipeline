@@ -23,7 +23,7 @@ You need **conda** (or mamba). Everything else is installed for you.
 ```bash
 # clone the repo
 git clone https://github.com/Rama1752/Snakemake-WGS-WES-Germline-Pipeline.git
-cd wgs-wes-germline-pipeline
+cd Snakemake-WGS-WES-Germline-Pipeline
  
 # create the environment that runs Snakemake itself
 conda env create -f environment.yaml
